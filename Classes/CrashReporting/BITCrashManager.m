@@ -128,7 +128,8 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
     
     _crashFiles = [[NSMutableArray alloc] init];
     _crashesDir = nil;
-    
+
+    self.submitModally = NO;
     self.delegate = nil;
     
     NSString *testValue = nil;
@@ -729,6 +730,9 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
           [_crashReportUI askCrashReportDetails];
           [_crashReportUI showWindow:self];
           [_crashReportUI.window makeKeyAndOrderFront:self];
+          if (self.submitModally) {
+            [_crashReportUI runModally];
+          }
         }
       } else {
         [self cleanCrashReportWithFilename:_lastCrashFilename];
