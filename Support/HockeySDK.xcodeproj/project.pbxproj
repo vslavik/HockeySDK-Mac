@@ -43,7 +43,7 @@
 		1E378B201959D33700451E28 /* BITActivityIndicatorButton.h in Headers */ = {isa = PBXBuildFile; fileRef = 1E378B1E1959D33700451E28 /* BITActivityIndicatorButton.h */; };
 		1E378B211959D33700451E28 /* BITActivityIndicatorButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 1E378B1F1959D33700451E28 /* BITActivityIndicatorButton.m */; };
 		1E40340B195C2651002E98E5 /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1E403409195C2651002E98E5 /* CrashReporter.framework */; };
-		1E40340D195C2675002E98E5 /* CrashReporter.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1E403409195C2651002E98E5 /* CrashReporter.framework */; };
+		1E40340D195C2675002E98E5 /* CrashReporter.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 1E403409195C2651002E98E5 /* CrashReporter.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		1E413D9615A0FA0100620BFE /* HockeySDK.strings in Resources */ = {isa = PBXBuildFile; fileRef = 1E413D9315A0BB8800620BFE /* HockeySDK.strings */; };
 		1E5785D619461DDF0014D19A /* BITCrashDetails.h in Headers */ = {isa = PBXBuildFile; fileRef = 1E5785D319461DDF0014D19A /* BITCrashDetails.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		1E5785D719461DDF0014D19A /* BITCrashDetails.m in Sources */ = {isa = PBXBuildFile; fileRef = 1E5785D419461DDF0014D19A /* BITCrashDetails.m */; };
@@ -520,7 +520,7 @@
 		1EF09D821523574200067A5C /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0610;
+				LastUpgradeCheck = 0620;
 			};
 			buildConfigurationList = 1EF09D851523574200067A5C /* Build configuration list for PBXProject "HockeySDK" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -762,7 +762,6 @@
 		1EF09DA21523574200067A5C /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -789,7 +788,6 @@
 		1EF09DA31523574200067A5C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
