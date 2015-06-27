@@ -98,6 +98,8 @@ const CGFloat kDetailsHeight = 285;
     _showComments = YES;
     _showDetails = NO;
     _showUserDetails = askUserDetails;
+    _nibDidLoadSuccessfully = NO;
+
     _runModally = NO;
     
     NSRect windowFrame = [[self window] frame];
@@ -124,9 +126,10 @@ const CGFloat kDetailsHeight = 285;
     [[self window] setFrame: windowFrame
                     display: YES
                     animate: NO];
+    [[self window] center];
     
   }
-  return self;  
+  return self;
 }
 
 
@@ -137,6 +140,7 @@ const CGFloat kDetailsHeight = 285;
 
 
 - (void)awakeFromNib {
+  _nibDidLoadSuccessfully = YES;
   [crashLogTextView setEditable:NO];
   if ([crashLogTextView respondsToSelector:@selector(setAutomaticSpellingCorrectionEnabled:)]) {
     [crashLogTextView setAutomaticSpellingCorrectionEnabled:NO];

@@ -38,12 +38,13 @@
 #import "BITCrashDetails.h"
 #import "BITCrashDetailsPrivate.h"
 #import "BITCrashMetaData.h"
+#import "BITCrashCXXExceptionHandler.h"
 
 #import "BITHockeyHelper.h"
 #import "BITHockeyAppClient.h"
 
 #import "BITCrashReportTextFormatter.h"
-#import <CrashReporter/CrashReporter.h>
+#import "CrashReporter.h"
 
 #import <sys/sysctl.h>
 #import <objc/runtime.h>
@@ -81,6 +82,52 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
   .context = NULL,
   .handleSignal = plcr_post_crash_callback
 };
+
+
+// Temporary class until PLCR catches up
+// We trick PLCR with an Objective-C exception.
+//
+// This code provides us access to the C++ exception message and stack trace.
+//
+@interface BITCrashCXXExceptionWrapperException : NSException
+- (instancetype)initWithCXXExceptionInfo:(const BITCrashUncaughtCXXExceptionInfo *)info;
+@end
+
+@implementation BITCrashCXXExceptionWrapperException {
+  const BITCrashUncaughtCXXExceptionInfo *_info;
+}
+
+- (instancetype)initWithCXXExceptionInfo:(const BITCrashUncaughtCXXExceptionInfo *)info {
+  extern char* __cxa_demangle(const char* mangled_name, char* output_buffer, size_t* length, int* status);
+  char *demangled_name = __cxa_demangle ? __cxa_demangle(info->exception_type_name ?: "", NULL, NULL, NULL) : NULL;
+  
+  if ((self = [super
+               initWithName:[NSString stringWithUTF8String:demangled_name ?: info->exception_type_name ?: ""]
+               reason:[NSString stringWithUTF8String:info->exception_message ?: ""]
+               userInfo:nil])) {
+    _info = info;
+  }
+  return self;
+}
+
+- (NSArray *)callStackReturnAddresses {
+  NSMutableArray *cxxFrames = [NSMutableArray arrayWithCapacity:_info->exception_frames_count];
+  
+  for (uint32_t i = 0; i < _info->exception_frames_count; ++i) {
+    [cxxFrames addObject:[NSNumber numberWithUnsignedLongLong:_info->exception_frames[i]]];
+  }
+  return cxxFrames;
+}
+
+@end
+
+
+// C++ Exception Handler
+static void uncaught_cxx_exception_handler(const BITCrashUncaughtCXXExceptionInfo *info) {
+  // This relies on a LOT of sneaky internal knowledge of how PLCR works and should not be considered a long-term solution.
+  NSGetUncaughtExceptionHandler()([[BITCrashCXXExceptionWrapperException alloc] initWithCXXExceptionInfo:info]);
+  abort();
+}
 
 
 @implementation BITCrashManager {
@@ -526,6 +573,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
       if (userProvidedMetaData)
         [self persistUserProvidedMetaData:userProvidedMetaData];
       
+      [self approveLatestCrashReport];
       [self sendNextCrashReport];
       return YES;
       
@@ -535,6 +583,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
       if (userProvidedMetaData)
         [self persistUserProvidedMetaData:userProvidedMetaData];
       
+      [self approveLatestCrashReport];
       [self sendNextCrashReport];
       return YES;
       
@@ -603,6 +652,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
                                                                              crashTime:appCrashTime
                                                                              osVersion:report.systemInfo.operatingSystemVersion
                                                                                osBuild:report.systemInfo.operatingSystemBuild
+                                                                            appVersion:report.applicationInfo.applicationMarketingVersion
                                                                               appBuild:report.applicationInfo.applicationVersion
                                     ];
       }
@@ -686,6 +736,12 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
 
 #pragma mark - Crash Report Processing
 
+// store the latest crash report as user approved, so if it fails it will retry automatically
+- (void)approveLatestCrashReport {
+  [_approvedCrashReports setObject:[NSNumber numberWithBool:YES] forKey:[_crashesDir stringByAppendingPathComponent: _lastCrashFilename]];
+  [self saveSettings];
+}
+
 - (void)invokeProcessing {
   BITHockeyLog(@"INFO: Start CrashManager processing");
   
@@ -727,17 +783,23 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
           [_crashReportUI setUserName:[self userNameForCrashReport]];
           [_crashReportUI setUserEmail:[self userEmailForCrashReport]];
           
-          [_crashReportUI askCrashReportDetails];
-          [_crashReportUI showWindow:self];
-          [_crashReportUI.window makeKeyAndOrderFront:self];
-          if (self.submitModally) {
-            [_crashReportUI runModally];
+          if (_crashReportUI.nibDidLoadSuccessfully) {
+            [_crashReportUI askCrashReportDetails];
+            [_crashReportUI showWindow:self];
+            [_crashReportUI.window makeKeyAndOrderFront:self];
+            if (self.submitModally) {
+              [_crashReportUI runModally];
+            }
+          } else {
+            [self approveLatestCrashReport];
+            [self sendNextCrashReport];
           }
         }
       } else {
         [self cleanCrashReportWithFilename:_lastCrashFilename];
       }
     } else {
+      [self approveLatestCrashReport];
       [self sendNextCrashReport];
     }
   }
@@ -812,6 +874,9 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
         // this should never happen, theoretically only if NSSetUncaugtExceptionHandler() has some internal issues
         NSLog(@"[HockeySDK] ERROR: Exception handler could not be set. Make sure there is no other exception handler set up!");
       }
+        
+      // Add the C++ uncaught exception handler, which is currently not handled by PLCrashReporter internally
+      [BITCrashUncaughtCXXExceptionHandlerManager addCXXExceptionHandler:uncaught_cxx_exception_handler];
     } else {
       NSLog(@"[HockeySDK] WARNING: Detecting crashes is NOT enabled due to running the app with a debugger attached.");
     }
@@ -861,6 +926,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
   NSString *crashXML = nil;
   BITHockeyAttachment *attachment = nil;
   
+  // we start sending always with the oldest pending one
   NSString *filename = _crashFiles[0];
   NSData *crashData = [NSData dataWithContentsOfFile:filename];
   if ([crashData length] > 0) {
@@ -869,6 +935,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
     NSString *installString = nil;
     NSString *crashLogString = nil;
     NSString *appBundleIdentifier = nil;
+    NSString *appBundleMarketingVersion = nil;
     NSString *appBundleVersion = nil;
     NSString *osVersion = nil;
     NSString *deviceModel = nil;
@@ -896,6 +963,7 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
     metaFilename = [filename stringByAppendingPathExtension:@"meta"];
     crashLogString = [BITCrashReportTextFormatter stringValueForCrashReport:report crashReporterKey:installString];
     appBundleIdentifier = report.applicationInfo.applicationIdentifier;
+    appBundleMarketingVersion = report.applicationInfo.applicationMarketingVersion ?: @"";
     appBundleVersion = report.applicationInfo.applicationVersion;
     osVersion = report.systemInfo.operatingSystemVersion;
     deviceModel = [BITSystemProfile deviceModel];
@@ -941,13 +1009,14 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
       }
     }
     
-    crashXML = [NSString stringWithFormat:@"<crashes><crash><applicationname>%s</applicationname><uuids>%@</uuids><bundleidentifier>%@</bundleidentifier><systemversion>%@</systemversion><platform>%@</platform><senderversion>%@</senderversion><version>%@</version><uuid>%@</uuid><log><![CDATA[%@]]></log><userid>%@</userid><username>%@</username><contact>%@</contact><installstring>%@</installstring><description><![CDATA[%@]]></description></crash></crashes>",
+    crashXML = [NSString stringWithFormat:@"<crashes><crash><applicationname>%s</applicationname><uuids>%@</uuids><bundleidentifier>%@</bundleidentifier><systemversion>%@</systemversion><platform>%@</platform><senderversion>%@</senderversion><versionstring>%@</versionstring><version>%@</version><uuid>%@</uuid><log><![CDATA[%@]]></log><userid>%@</userid><username>%@</username><contact>%@</contact><installstring>%@</installstring><description><![CDATA[%@]]></description></crash></crashes>",
                 [[self applicationName] UTF8String],
                 appBinaryUUIDs,
                 appBundleIdentifier,
                 osVersion,
                 deviceModel,
                 [self applicationVersion],
+                appBundleMarketingVersion,
                 appBundleVersion,
                 crashUUID,
                 [crashLogString stringByReplacingOccurrencesOfString:@"]]>" withString:@"]]" @"]]><![CDATA[" @">" options:NSLiteralSearch range:NSMakeRange(0,crashLogString.length)],
@@ -956,11 +1025,6 @@ static PLCrashReporterCallbacks plCrashCallbacks = {
                 useremail,
                 installString,
                 [description stringByReplacingOccurrencesOfString:@"]]>" withString:@"]]" @"]]><![CDATA[" @">" options:NSLiteralSearch range:NSMakeRange(0,description.length)]];
-    
-    // store this crash report as user approved, so if it fails it will retry automatically
-    _approvedCrashReports[filename] = @YES;
-    
-    [self saveSettings];
     
     BITHockeyLog(@"INFO: Sending crash reports:\n%@", crashXML);
     [self sendCrashReportWithFilename:filename xml:crashXML attachment:attachment];
