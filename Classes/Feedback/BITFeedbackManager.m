@@ -1,32 +1,3 @@
-/*
- * Author: Andreas Linde <mail@andreaslinde.de>
- *
- * Copyright (c) 2012-2014 HockeyApp, Bit Stadium GmbH.
- * All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
-
 #import "HockeySDK.h"
 #import "HockeySDKPrivate.h"
 
@@ -37,7 +8,6 @@
 
 #import "BITHockeyAppClient.h"
 #import "BITHockeyHelper.h"
-
 
 #define kBITFeedbackUserDataAsked   @"HockeyFeedbackUserDataAsked"
 #define kBITFeedbackDateOfLastCheck	@"HockeyFeedbackDateOfLastCheck"
@@ -735,7 +705,7 @@
   
   // build request & send
   NSString *url = [NSString stringWithFormat:@"%@%@", self.serverURL, parameter];
-  BITHockeyLog(@"INFO: sending api request to %@", url);
+  BITHockeyLogDebug(@"INFO: sending api request to %@", url);
   
   NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:url] cachePolicy:1 timeoutInterval:10.0];
   [request setHTTPMethod:httpMethod];
@@ -856,7 +826,7 @@
       [self performSelector:@selector(fetchMessageUpdates) withObject:nil afterDelay:0.2];
     } else if ([responseData length]) {
       NSString *responseString = [[NSString alloc] initWithBytes:[responseData bytes] length:[responseData length] encoding: NSUTF8StringEncoding];
-      BITHockeyLog(@"INFO: Received API response: %@", responseString);
+      BITHockeyLogDebug(@"INFO: Received API response: %@", responseString);
       
       if (responseString && [responseString dataUsingEncoding:NSUTF8StringEncoding]) {
         NSError *error = NULL;
@@ -871,7 +841,7 @@
                                                 code:BITFeedbackAPIServerReturnedEmptyResponse
                                             userInfo:@{NSLocalizedDescriptionKey: @"Server returned empty response."}]];
         } else {
-          BITHockeyLog(@"INFO: Received API response: %@", responseString);
+          BITHockeyLogDebug(@"INFO: Received API response: %@", responseString);
           NSString *status = [feedDict objectForKey:@"status"];
           if ([status compare:@"success"] != NSOrderedSame) {
             [self reportError:[NSError errorWithDomain:kBITFeedbackErrorDomain
