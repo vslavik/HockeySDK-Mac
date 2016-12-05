@@ -1,6 +1,6 @@
-## Version 4.1.0
+## Version 4.1.1
 
-- [Changelog](http://www.hockeyapp.net/help/sdk/mac/4.1.0/docs/docs/Changelog.html)
+- [Changelog](http://www.hockeyapp.net/help/sdk/mac/4.1.1/docs/docs/Changelog.html)
 
 **NOTE:** With the release of HockeySDK 4.0.0-alpha.1 a bug was introduced which lead to the exclusion of the Application Support folder from iCloud and iTunes backups.
 
@@ -404,7 +404,7 @@ To check if data is send properly to HockeyApp and also see some additional SDK 
 <a id="documentation"></a>
 ## 4. Documentation
 
-Our documentation can be found on [HockeyApp](http://hockeyapp.net/help/sdk/mac/4.1.0/index.html).
+Our documentation can be found on [HockeyApp](http://hockeyapp.net/help/sdk/mac/4.1.1/index.html).
 
 <a id="troubleshooting"></a>
 ## 5.Troubleshooting
