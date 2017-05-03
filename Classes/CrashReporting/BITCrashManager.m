@@ -738,6 +738,7 @@ static void uncaught_cxx_exception_handler(const BITCrashUncaughtCXXExceptionInf
           if (_crashReportUI.nibDidLoadSuccessfully) {
             [_crashReportUI askCrashReportDetails];
             [_crashReportUI showWindow:self];
+            [_crashReportUI.window setLevel:NSNormalWindowLevel+1];
             [_crashReportUI.window makeKeyAndOrderFront:self];
             if (self.submitModally) {
               [_crashReportUI runModally];
