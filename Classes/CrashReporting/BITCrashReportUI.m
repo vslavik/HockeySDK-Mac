@@ -43,15 +43,15 @@
 // Redeclare BITCrashReportUI properties with readwrite attribute.
 @property (nonatomic, readwrite) BOOL nibDidLoadSuccessfully;
 
+@property (nonatomic, readwrite) BOOL doRunModally;
+
 @end
 
 static const CGFloat kUserHeight = 50;
 static const CGFloat kCommentsHeight = 105;
 static const CGFloat kDetailsHeight = 285;
 
-@implementation BITCrashReportUI {
-  BOOL _runModally;
-}
+@implementation BITCrashReportUI
 
 - (instancetype)initWithManager:(BITCrashManager *)crashManager crashReport:(NSString *)crashReport logContent:(NSString *)logContent applicationName:(NSString *)applicationName askUserDetails:(BOOL)askUserDetails {
   
@@ -68,7 +68,7 @@ static const CGFloat kDetailsHeight = 285;
     _showUserDetails = askUserDetails;
     _nibDidLoadSuccessfully = NO;
 
-    _runModally = NO;
+    _doRunModally = NO;
     
     NSRect windowFrame = [[self window] frame];
     windowFrame.size = NSMakeSize(windowFrame.size.width, windowFrame.size.height - kDetailsHeight);
@@ -102,8 +102,9 @@ static const CGFloat kDetailsHeight = 285;
 
 
 - (void)runModally {
-  _runModally = YES;
-  [NSApp runModalForWindow:[self window]];
+  self.doRunModally = YES;
+  NSWindow *win = [self window];
+  [NSApp runModalForWindow:win];
 }
 
 
@@ -118,7 +119,7 @@ static const CGFloat kDetailsHeight = 285;
 
 - (void)endCrashReporter {
   [self close];
-  if (_runModally) {
+  if (self.doRunModally) {
     [NSApp stopModal];
   }
 }

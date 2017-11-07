@@ -736,7 +736,7 @@ __attribute__((noreturn)) static void uncaught_cxx_exception_handler(const BITCr
             [self.crashReportUI.window setLevel:NSNormalWindowLevel+1];
             [self.crashReportUI.window makeKeyAndOrderFront:self];
             if (self.submitModally) {
-              [_crashReportUI runModally];
+              [self.crashReportUI runModally];
             }
           } else {
             [self approveLatestCrashReport];
