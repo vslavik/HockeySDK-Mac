@@ -932,7 +932,7 @@
 			};
 			buildConfigurationList = 1EF09D851523574200067A5C /* Build configuration list for PBXProject "HockeySDK" */;
 			compatibilityVersion = "Xcode 3.2";
-			developmentRegion = English;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
@@ -943,6 +943,7 @@
 				nb,
 				sv,
 				ja,
+				Base,
 			);
 			mainGroup = 1EF09D801523574200067A5C;
 			productRefGroup = 1EF09D8D1523574200067A5C /* Products */;
